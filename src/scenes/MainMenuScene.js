@@ -1,95 +1,89 @@
 // scenes/MainMenuScene.js
 
+// 从我们的UI工厂文件中导入函数
+import { createMenuButton } from '../utils/UIFactory.js';
+
 export class MainMenuScene extends Phaser.Scene {
 
     constructor() {
         super('MainMenuScene');
     }
 
+    // preload() 方法现在是空的，因为所有资源都在 PreloaderScene 中加载
+    preload() {}
+
     create() {
-        // 1. 添加背景和标题
+        // 1. 设置新的背景
         const gameWidth = this.sys.game.config.width;
         const gameHeight = this.sys.game.config.height;
-        this.add.image(gameWidth / 2, gameHeight / 2, 'menu').setDisplaySize(gameWidth, gameHeight);
-        this.add.text(gameWidth / 2, gameHeight / 2 - 150, '社会主义新农村建设', {
-            fontSize: '64px', fill: '#ffffff', stroke: '#000000', strokeThickness: 6
+        this.add.image(gameWidth / 2, gameHeight / 2, 'menu_background').setDisplaySize(gameWidth, gameHeight);
+
+        // 2. 设计新的标题
+        this.add.text(gameWidth / 2, gameHeight * 0.3, '社会主义新农村建设', {
+            fontFamily: '"Microsoft YaHei", "SimHei", "Heiti SC", sans-serif',
+            fontSize: '72px',
+            fill: '#bb281b', // 革命红
+            stroke: '#f8e4a8', // 丰收黄描边
+            strokeThickness: 4,
+            shadow: {
+                offsetX: 2,
+                offsetY: 2,
+                color: '#000000',
+                blur: 5,
+                stroke: true,
+                fill: true
+            }
         }).setOrigin(0.5);
 
-        // --- 2. 智能创建菜单按钮 ---
+        // --- 3. 使用新的UI工厂函数，智能创建所有菜单按钮 ---
         const allSaves = this.loadAllSaves();
         const mostRecentSave = this.findMostRecentSave(allSaves);
 
-        let firstButton;
-        // 情况A：如果存在任何存档
-        if (mostRecentSave) {
-            firstButton = this.add.text(gameWidth / 2, gameHeight / 2, '继续游戏', {
-                fontSize: '32px', fill: '#FFF', backgroundColor: '#333'
-            }).setOrigin(0.5).setPadding(15).setInteractive();
+        const buttonYStart = gameHeight * 0.55;
+        const buttonSpacing = 100;
 
-            // 点击“继续”，直接加载最新的存档
-            firstButton.on('pointerdown', () => {
+        // 根据是否有存档，决定第一个按钮的文本和功能
+        if (mostRecentSave) {
+            // 创建“继续游戏”按钮
+            createMenuButton(this, gameWidth / 2, buttonYStart, '继续游戏', () => {
                 this.scene.start('GameScene', {
                     saveSlot: mostRecentSave.slot,
                     loadSave: true
                 });
             });
-        }
-        // 情况B：如果没有任何存档
-        else {
-            firstButton = this.add.text(gameWidth / 2, gameHeight / 2, '新游戏', {
-                fontSize: '32px', fill: '#FFF', backgroundColor: '#333'
-            }).setOrigin(0.5).setPadding(15).setInteractive();
-
-            // 点击“新游戏”，跳转到存档管理界面，让玩家选择一个槽位
-            firstButton.on('pointerdown', () => {
-                 // 检查玩家是否看过开场动画
-                    const hasPlayedIntro = localStorage.getItem('hasPlayedIntro') === 'true';
-
-                    // 如果没看过，就先去播放过场动画
-                    if (!hasPlayedIntro) {
-                        this.scene.start('CutsceneScene');
-                    } 
-                    // 如果已经看过了，就直接去存档管理界面
-                    else {
-                        this.scene.start('SavesScene');
-                    }
-                    });
+        } else {
+            // 创建“新游戏”按钮
+            createMenuButton(this, gameWidth / 2, buttonYStart, '新游戏', () => {
+                const hasPlayedIntro = localStorage.getItem('hasPlayedIntro') === 'true';
+                if (!hasPlayedIntro) {
+                    this.scene.start('CutsceneScene');
+                } else {
+                    this.scene.start('SavesScene');
+                }
+            });
         }
 
-        // “存档管理”按钮，总是存在
-        const savesButton = this.add.text(gameWidth / 2, gameHeight / 2 + 80, '存档管理', {
-            fontSize: '32px', fill: '#FFF', backgroundColor: '#333'
-        }).setOrigin(0.5).setPadding(15).setInteractive();
-
-        savesButton.on('pointerdown', () => {
+        // 创建“存档管理”按钮
+        createMenuButton(this, gameWidth / 2, buttonYStart + buttonSpacing, '存档管理', () => {
             this.scene.start('SavesScene');
         });
-
-        // 添加鼠标悬停效果
-        [firstButton, savesButton].forEach(button => {
-            button.on('pointerover', () => button.setBackgroundColor('#555'));
-            button.on('pointerout', () => button.setBackgroundColor('#333'));
+        
+        // 创建“设置”按钮
+        createMenuButton(this, gameWidth / 2, buttonYStart + buttonSpacing * 2, '设置', () => {
+            alert('设置功能正在开发中！');
         });
     }
     
-    // 辅助函数：加载所有存档
+    // --- 辅助函数 (保持不变) ---
     loadAllSaves() {
         const savedData = localStorage.getItem('myFarmAllSlots');
         if (savedData) { return JSON.parse(savedData); }
-        return []; // 如果没有存档，返回空数组
+        return [];
     }
-
-    // 辅助函数：找到最近一次的存档
+    
     findMostRecentSave(allSaves) {
-        // 过滤出所有有数据的存档
         const existingSaves = allSaves.filter(s => s.hasData);
-
-        // 如果没有存档，返回null
-        if (existingSaves.length === 0) {
-            return null;
-        }
-
-        // 使用 sort 对存档按 lastSave 时间戳进行降序排序，第一个就是最新的
+        if (existingSaves.length === 0) return null;
         existingSaves.sort((a, b) => b.lastSave - a.lastSave);
         return existingSaves[0];
     }

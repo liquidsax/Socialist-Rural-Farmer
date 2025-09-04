@@ -34,7 +34,7 @@ export class PreloaderScene extends Phaser.Scene {
 
         // --- 5. 在这里加载【整个游戏】的所有资源！ ---
         // 菜单资源
-        this.load.image('menu', 'assets/menu.png'); 
+        this.load.image('menu', 'assets/sun_menu.png'); 
 
         // 游戏资源
         this.load.image('farm', 'assets/farmland.png'); // 请确保这里的路径和文件名是您最终确定的
@@ -42,6 +42,8 @@ export class PreloaderScene extends Phaser.Scene {
         this.load.image('sprout', 'assets/seed.png');
         this.load.image('carrot', 'assets/ripe.png');
         this.load.image('letter', 'assets/letter.png');
+        this.load.image('menu_background', 'assets/sun_menu.png');
+        this.load.image('button_banner', 'assets/redButton.png');
         // 未来还可以加: this.load.audio('bgm', 'assets/music.mp3');
     }
 
