@@ -41,7 +41,7 @@ export class PreloaderScene extends Phaser.Scene {
         this.load.image('plot', 'assets/none.png');
         this.load.image('sprout', 'assets/seed.png');
         this.load.image('carrot', 'assets/ripe.png');
-        
+        this.load.image('letter', 'assets/letter.png');
         // 未来还可以加: this.load.audio('bgm', 'assets/music.mp3');
     }
 

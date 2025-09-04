@@ -1,104 +1,96 @@
+// scenes/MainMenuScene.js
+
 export class MainMenuScene extends Phaser.Scene {
 
     constructor() {
         super('MainMenuScene');
     }
 
-    preload() {
-        // 主菜单也需要背景图
-        // this.load.image('menu', 'assets/menu.png');
-    }
-
     create() {
-        // 1. 添加背景
+        // 1. 添加背景和标题
         const gameWidth = this.sys.game.config.width;
         const gameHeight = this.sys.game.config.height;
-        const bg = this.add.image(gameWidth / 2, gameHeight / 2, 'menu');
-        bg.setDisplaySize(gameWidth, gameHeight);
-
-        // 2. 添加游戏标题
+        this.add.image(gameWidth / 2, gameHeight / 2, 'menu').setDisplaySize(gameWidth, gameHeight);
         this.add.text(gameWidth / 2, gameHeight / 2 - 150, '社会主义新农村建设', {
             fontSize: '64px', fill: '#ffffff', stroke: '#000000', strokeThickness: 6
         }).setOrigin(0.5);
 
-        // --- 3. 动态创建存档槽位UI ---
-        const allSaves = this.loadAllSaves(); // 首先，加载所有存档的数据
-        
-        allSaves.forEach((saveData, index) => {
-            // 计算每个按钮的垂直位置
-            const yPos = gameHeight / 2 - 20 + index * 80;
-            let textToShow;
-            const hasData = saveData.hasData;
+        // --- 2. 智能创建菜单按钮 ---
+        const allSaves = this.loadAllSaves();
+        const mostRecentSave = this.findMostRecentSave(allSaves);
 
-            // 根据槽位是否有数据，决定显示的文字
-            if (hasData) {
-                // 将时间戳格式化为本地日期和时间
-                const saveDate = new Date(saveData.lastSave).toLocaleString();
-                textToShow = `存档 ${index + 1} - [${saveDate}]`;
-            } else {
-                textToShow = `[ 新游戏 - 存档槽 ${index + 1} ]`;
-            }
-            
-            // 创建代表该存档槽的按钮
-            const slotButton = this.add.text(gameWidth / 2, yPos, textToShow, {
-                fontSize: '28px', 
-                fill: '#FFF', 
-                backgroundColor: '#333',
-                align: 'center'
+        let firstButton;
+        // 情况A：如果存在任何存档
+        if (mostRecentSave) {
+            firstButton = this.add.text(gameWidth / 2, gameHeight / 2, '继续游戏', {
+                fontSize: '32px', fill: '#FFF', backgroundColor: '#333'
             }).setOrigin(0.5).setPadding(15).setInteractive();
 
-            // 为每个按钮添加独立的点击事件
-            slotButton.on('pointerdown', () => {
-                // 启动游戏场景，并传递【槽位ID】和【是否加载】的关键信息
-                this.scene.start('GameScene', { 
-                    saveSlot: index, 
-                    loadSave: hasData 
+            // 点击“继续”，直接加载最新的存档
+            firstButton.on('pointerdown', () => {
+                this.scene.start('GameScene', {
+                    saveSlot: mostRecentSave.slot,
+                    loadSave: true
                 });
             });
-            
-            // 添加鼠标悬停效果
-            slotButton.on('pointerover', () => slotButton.setBackgroundColor('#555'));
-            slotButton.on('pointerout', () => slotButton.setBackgroundColor('#333'));
+        }
+        // 情况B：如果没有任何存档
+        else {
+            firstButton = this.add.text(gameWidth / 2, gameHeight / 2, '新游戏', {
+                fontSize: '32px', fill: '#FFF', backgroundColor: '#333'
+            }).setOrigin(0.5).setPadding(15).setInteractive();
+
+            // 点击“新游戏”，跳转到存档管理界面，让玩家选择一个槽位
+            firstButton.on('pointerdown', () => {
+                 // 检查玩家是否看过开场动画
+                    const hasPlayedIntro = localStorage.getItem('hasPlayedIntro') === 'true';
+
+                    // 如果没看过，就先去播放过场动画
+                    if (!hasPlayedIntro) {
+                        this.scene.start('CutsceneScene');
+                    } 
+                    // 如果已经看过了，就直接去存档管理界面
+                    else {
+                        this.scene.start('SavesScene');
+                    }
+                    });
+        }
+
+        // “存档管理”按钮，总是存在
+        const savesButton = this.add.text(gameWidth / 2, gameHeight / 2 + 80, '存档管理', {
+            fontSize: '32px', fill: '#FFF', backgroundColor: '#333'
+        }).setOrigin(0.5).setPadding(15).setInteractive();
+
+        savesButton.on('pointerdown', () => {
+            this.scene.start('SavesScene');
         });
-        
-        // --- 4. 保留“设置”和“退出”按钮 (可选) ---
-        // 我们将它们放在存档列表下方
 
-        const settingsButton = this.add.text(gameWidth - 120, gameHeight - 50, '设置', {
-            fontSize: '24px', fill: '#FFF'
-        }).setOrigin(0.5).setPadding(10).setInteractive();
-
-        const exitButton = this.add.text(120, gameHeight - 50, '退出', {
-            fontSize: '24px', fill: '#FFF'
-        }).setOrigin(0.5).setPadding(10).setInteractive();
-
-        settingsButton.on('pointerdown', () => {
-            alert('设置功能正在开发中！');
-        });
-
-        exitButton.on('pointerdown', () => {
-            this.cameras.main.fadeOut(500, 0, 0, 0);
-            this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-                this.add.text(gameWidth / 2, gameHeight / 2, '感谢游玩！\n请关闭浏览器标签页。', {
-                    fontSize: '40px', fill: '#FFF', align: 'center'
-                }).setOrigin(0.5);
-            });
+        // 添加鼠标悬停效果
+        [firstButton, savesButton].forEach(button => {
+            button.on('pointerover', () => button.setBackgroundColor('#555'));
+            button.on('pointerout', () => button.setBackgroundColor('#333'));
         });
     }
     
-    // 辅助函数：从localStorage加载所有存档数据
+    // 辅助函数：加载所有存档
     loadAllSaves() {
         const savedData = localStorage.getItem('myFarmAllSlots');
-        if (savedData) {
-            return JSON.parse(savedData);
+        if (savedData) { return JSON.parse(savedData); }
+        return []; // 如果没有存档，返回空数组
+    }
+
+    // 辅助函数：找到最近一次的存档
+    findMostRecentSave(allSaves) {
+        // 过滤出所有有数据的存档
+        const existingSaves = allSaves.filter(s => s.hasData);
+
+        // 如果没有存档，返回null
+        if (existingSaves.length === 0) {
+            return null;
         }
 
-        // 如果连主存档文件都没有，就创建一个包含3个空槽位的默认结构
-        console.log('未找到任何存档文件，创建新的存档结构。');
-        return [
-            { slot: 0, hasData: false, lastSave: null },
-            { slot: 1, hasData: false, lastSave: null },
-            { slot: 2, hasData: false, lastSave: null },
-        ];
+        // 使用 sort 对存档按 lastSave 时间戳进行降序排序，第一个就是最新的
+        existingSaves.sort((a, b) => b.lastSave - a.lastSave);
+        return existingSaves[0];
     }
 }

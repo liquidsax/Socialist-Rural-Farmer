@@ -1,6 +1,8 @@
 // 导入场景
 import { PreloaderScene } from './scenes/PreloaderScene.js'; // 导入新场景
 import { MainMenuScene } from './scenes/MainMenuScene.js';
+import { CutsceneScene } from './scenes/CutsceneScene.js';
+import { SavesScene } from './scenes/SaveScene.js'; 
 import { GameScene } from './scenes/GameScene.js';
 import { PauseScene } from './scenes/PauseScene.js';
 
@@ -16,6 +18,8 @@ const config = {
     scene: [
         PreloaderScene, // !!! 把 PreloaderScene 作为第一个启动的场景 !!!
         MainMenuScene, 
+        CutsceneScene,
+        SavesScene,
         GameScene,
         PauseScene
     ],
